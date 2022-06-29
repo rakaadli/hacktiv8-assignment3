@@ -1,10 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 )
 
 const (
@@ -29,6 +32,12 @@ func getWeather(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodGet {
 
+		//Read Data
+		file, _ := ioutil.ReadFile("template/data.json")
+		hasil := WeatherData{}
+		_ = json.Unmarshal(file, &hasil)
+		//fmt.Println(hasil)
+
 		water := rand.Intn(MAX-MIN) + MIN
 		wind := rand.Intn(MAX-MIN) + MIN
 		weatherStatus := "STATUS DEFAULT"
@@ -47,11 +56,19 @@ func getWeather(w http.ResponseWriter, r *http.Request) {
 			weatherStatus = "BAHAYA"
 		}
 
-		result := WeatherData{
+		updatedData := WeatherData{
 			Water:  water,
 			Wind:   wind,
 			Status: weatherStatus,
 		}
+
+		//update data
+		json, _ := json.Marshal(&updatedData)
+
+		// fmt.Println(string(json))
+
+		//write data
+		_ = ioutil.WriteFile("template/data.json", json, os.ModePerm)
 
 		tmpl, err := template.ParseFiles("views/weather_status.html")
 
@@ -60,7 +77,7 @@ func getWeather(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		tmpl.Execute(w, result)
+		tmpl.Execute(w, updatedData)
 		return
 
 	}
